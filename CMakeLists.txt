@@ -47,7 +47,7 @@ conan_add_remote(NAME piratesahoy
     VERIFY_SSL True
 )
 
-find_package(zlib REQUIRED)
+find_package(ZLIB REQUIRED)
 find_package(spdlog REQUIRED)
 find_package(FastFloat REQUIRED)
 find_package(mimalloc REQUIRED)

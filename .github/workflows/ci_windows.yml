@@ -43,9 +43,7 @@ jobs:
     - uses: lukka/get-cmake@latest
     - name: Configure CMake w/ Conan
       run: |
-        conan profile new default --detect
-        conan profile update conf.tools.system.package_manager:mode=install default
-        conan profile update conf.tools.system.package_manager:sudo=True default
+        conan profile detect --force
         cmake --preset=default
     - name: Build
       run: cmake --build --preset=${{ matrix.configuration }}

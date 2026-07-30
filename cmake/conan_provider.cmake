@@ -232,6 +232,10 @@ function(detect_compiler compiler compiler_version compiler_runtime compiler_run
     if(_compiler MATCHES MSVC)
         set(_compiler "msvc")
         string(SUBSTRING ${MSVC_VERSION} 0 3 _compiler_version)
+		if(_compiler_version GREATER 194)
+			message(STATUS "CMake-Conan:  MSVC ${_compiler_version} is not yet supported by Conan, using compiler.version=194")
+			set(_compiler_version 194)
+		endif()
         # Configure compiler.runtime and compiler.runtime_type settings for MSVC
         if(CMAKE_MSVC_RUNTIME_LIBRARY)
             set(_msvc_runtime_library ${CMAKE_MSVC_RUNTIME_LIBRARY})
