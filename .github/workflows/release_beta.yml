@@ -1,0 +1,60 @@
+name: Prepare BETA release
+
+on:
+  push:
+    tags:
+      - "pa*"
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [debug, release]
+        enable_steam: [false]
+#        include:
+#          - enable_steam: true
+#            configuration: msvc-release
+    name: 'Windows [${{ matrix.configuration }}, steam: ${{ matrix.enable_steam }}]'
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+    - uses: ilammy/msvc-dev-cmd@v1
+    - name: Install Conan
+      run: pip install conan==2.12.2
+    - uses: lukka/get-cmake@latest
+    - name: Configure CMake w/ Conan
+      run: |
+        conan profile new default --detect
+        conan profile update conf.tools.system.package_manager:mode=install default
+        conan profile update conf.tools.system.package_manager:sudo=True default
+        cmake --preset=default
+    - name: Build
+      run: cmake --build --preset=${{ matrix.configuration }} -DSTORM_ENABLE_STEAM=${{ matrix.enable_steam }} -DSTORM_ENABLE_CRASH_REPORTS=ON
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: storm-engine.${{ matrix.configuration }}-steam-${{ matrix.enable_steam }}
+        path: build/default/${{ matrix.configuration }}
+        include-hidden-files: true
+    - name: Archive release
+      uses: papeloto/action-zip@v1
+      with:
+        files: build/default/${{ matrix.configuration }}
+        recursive: true
+        dest: storm-engine.${{ matrix.configuration }}-steam-${{ matrix.enable_steam }}.zip
+    - name: Publish release
+      uses: softprops/action-gh-release@v1
+      with:
+        draft: contains(github.ref, 'beta')
+        files: storm-engine.${{ matrix.configuration }}-steam-${{ matrix.enable_steam }}.zip
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    - name: Upload debug symbols
+      run: |
+        npm install @sentry/cli
+        ./node_modules/.bin/sentry-cli --auth-token ${{ secrets.SENTRY_AUTH_TOKEN }} debug-files upload -o piratesahoy -p storm-engine -t pe -t pdb "build/default/${{ matrix.configuration }}"
